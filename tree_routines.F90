@@ -5,7 +5,7 @@ module Tree_Routines
   use Defined_Types
   private
   public :: Walk_Tree,Tree_Get_Hierarchy_Level,Tree_Get_Current_Parent,Node_Galaxy_Active,Walk_Tree_To_Level
-  public :: Walk_To_Next_Branch
+  public :: Walk_To_Next_Branch, Walk_To_Uncle
 
 contains
 
@@ -110,6 +110,32 @@ contains
     end if
     return
   end function Walk_To_Next_Branch
+!---------------------------------------------------------------------!
+! this is the function to walk to uncle/aunt node (parent's sibling)  !
+!---------------------------------------------------------------------!
+  function Walk_To_Uncle(This_Node) result (Next_Node)
+    !% This function provides a mechanism for walking through the branches of the merger tree. Given a pointer {\tt This\_Node}
+    !% to a branch of the tree, it will return the uncle node, which is sibling of parent node
+
+    type (TreeNode), pointer :: This_Node, Next_Node
+    Next_Node => This_Node%parent
+    if (associated(Next_Node%sibling)) then
+          Next_Node => Next_Node%sibling ! walk to uncle/aunt if one exists.
+       else
+          do while (.not.associated(Next_Node%sibling).and.associated(Next_Node%parent))
+             Next_Node => Next_Node%parent ! No siblings either, so walk back to parents until we find more siblings.
+          end do
+          if (associated(Next_Node%sibling)) then
+             Next_Node => Next_Node%sibling ! Move to the next sibling
+          else
+             ! Node has no parent - we're back to the base of the tree. Dissassociate the pointer to indicate the tree has been
+             ! completely walked.
+             Next_Node => null()
+          end if
+    end if
+    return
+  end function Walk_To_Uncle
+
 
 
 end module Tree_Routines

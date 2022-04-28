@@ -17,25 +17,27 @@ implicit none
   real, allocatable        :: wlev(:),alev(:), z_bin(:)
   integer, allocatable     :: ifraglev(:)!, count_GC_array(:)
   real                     :: mphalo,mres,ahalo,deltcrit,sigmacdm,zmax
-  integer, parameter       :: nlev=50 !number of levels of the tree to store
+  integer, parameter       :: nlev=180 !number of levels of the tree to store
   integer                  :: ierr,nhalomax,nhalo,nhalolev(nlev),jphalo(nlev),ilev
   integer                  :: iter,iseed0,iseed
   EXTERNAL deltcrit,sigmacdm,split
   real                     :: dc, M_form_GC, z_form_GC, z
   integer                  :: count_branch, count_GC, jlevelmax, n_z_bin
+!  character                :: path
+!  path = '/Users/ngoc/Desktop/project/GCs/code/'
 
 ! These cosmological parameters are taken from Creasey paper
- omega0  = 0.315  !code default = 0.25 
- lambda0 = 0.685  !code default = 0.75
- h0      = 0.67   !code default = 0.73
- omegab  = 0.04
+ omega0  = 0.315      !code default = 0.25 
+ lambda0 = 0.685      !code default = 0.75
+ h0      = 0.67       !code default = 0.73
+ omegab  = 0.0        !code default = 0.04
  Gamma   = omega0*h0  ! Omega_m.h  ignoring effect of baryons
 
 ! mass <- mass.h0 since unit in this code is [h^-1.M_sun] while mass [M_sun] in Creasey et. al. 2018
 ! Mass of halo for which the tree is to be grown [h^-1.M_sun]. The mass resolution of the tree and the number of trees to grow. 
  mphalo = 1.0e+12*h0   !halo mass at base of tree, default = 10^14
  mres   = 1.0e+07*h0   !mass resolution, default = 10^8
- ntree  = 1         !number of trees
+ ntree  = 1            !number of trees
 
 
 
@@ -51,6 +53,7 @@ implicit none
 ! and the fits redone. Using this code and these new parameters will
 ! produce near identical results to the old code with the old parameters.
 ! (passed in module Modified_Merger_Tree and Time_Parameters)
+
 ! G0      = 0.57
 ! gamma_1 = 0.38
 ! gamma_2 = -0.01
@@ -67,24 +70,24 @@ implicit none
 ! (passed in module  Cosmological_Parameters and Power_Spectrum_Parameters)
 
  pkinfile= 'pk_Mill.dat' !Tabulated Millennium Simulation linear P(k)
-! itrans= -1  !indicates use transfer function tabulated in file pkinfile
-  itrans= 1   !indicates use BBKS CDM transfer function with specified Gamma and Omega0
-!  itrans= 2   !indicates use Bond & Efstathiou CDM transfer function with specified Gamma and Omega0
-! itrans= 3   !indicates use Eisenstein and Hu CDM transfer function with specified Omega0, Omegab and h0
-! CMB_T0 = 2.73 !For Eisenstein and Hu CDM transfer function one must specify the CMB temperature
+! itrans= -1             !indicates use transfer function tabulated in file pkinfile
+  itrans= 1              !indicates use BBKS CDM transfer function with specified Gamma and Omega0
+!  itrans= 2             !indicates use Bond & Efstathiou CDM transfer function with specified Gamma and Omega0
+! itrans= 3              !indicates use Eisenstein and Hu CDM transfer function with specified Omega0, Omegab and h0
+! CMB_T0 = 2.73          !For Eisenstein and Hu CDM transfer function one must specify the CMB temperature
 
 
 !Set primordial P(k) parameters (ignored if itrans=-1)
- nspec  = 1.0     !primoridial power spectrum spectral index
- dndlnk = 0.0     !allow running spectral index by setting ne.0
- kref   = 1.0     !pivot point for running index
- sigma8 = 0.829!0.9     !power spectrum amplitude set regardless of other parameters
+ nspec  = 1.0           !primoridial power spectrum spectral index
+ dndlnk = 0.0           !allow running spectral index by setting ne.0
+ kref   = 1.0           !pivot point for running index
+ sigma8 = 0.829         !power spectrum amplitude set regardless of other parameters, default = 0.9
 
-  ierr    = 1     !initial error status to control make_tree()
-  nhalomax= 0     !initialise
-  nhalo   = 0
-  iseed0  = -8635 !random number seed
-  iseed   = iseed0
+ ierr    = 1            !initial error status to control make_tree()
+ nhalomax= 0            !initialise
+ nhalo   = 0
+ iseed0  = -8635        !random number seed
+ iseed   = iseed0
 
 ! Set up the array of redshifts at which the tree is to be stored
   write(0,*) 'The redshifts at which the tree will be stored:'
@@ -92,8 +95,8 @@ implicit none
 
 ! Specify output/storage times of the merger tree
   ahalo = 1.0         !expansion factor at base of tree
-  zmax  = 9.0        !maximum redshift of stored tree, = 4. by default
-  do ilev = 1,nlev  !tree levels uniform between z=0 and zmax
+  zmax  = 9.0         !maximum redshift of stored tree, = 4. by default
+  do ilev = 1,nlev    !tree levels uniform between z=0 and zmax
      alev(ilev) = 1.0/(1.0+zmax*real(ilev-1)/real(nlev-1))
      dc         = deltcrit(alev(ilev))
      write(0,'(a2,1x,f6.3,1x,a,f6.3)')'z=',(1/alev(ilev)) -1.0,'at which deltcrit=',dc
@@ -101,7 +104,7 @@ implicit none
 
 
 !Start generating trees
-do i = 1,ntree
+do i = 1, ntree
     iter = 1   !if we run out of allocated memory, which is flagged by ierr=1 or ierr=2 then we do another iteration with more allocated memory
     do while (ierr.ne.0 .or. iter.eq.1) 
      if (iter.eq.1) iseed0 = iseed0-19  !advance seed for new tree
@@ -163,26 +166,26 @@ do i = 1,ntree
         endif
         This_Node => Walk_Tree(This_Node)
      end do
-     print *, 'number of branches in tree',i,' is',count_branch
-     print *, 'nlevel', jlevelmax
+!     print *, 'number of branches in tree',i,' is',count_branch
+!     print *, 'nlevel', jlevelmax
    
 
 !    Count the total number of GCs can be formed in the tree
-!    and the number of GCs in each redshift bin
-!    using the condition from Creasey 2018 that GCs can only formed inside halo with M >= 10^8 M_sun; z = 8.65
-     z = 0.
+!    using the conditions from Creasey 2018: GCs can only formed inside halo of M >= 10^8 M_sun; z = 8.65
+!    save in file the number count and redshift of halos which form GC
 
-!     count_GC_array = 0
-!    n_z_bin = (zmax - z_form_GC)/dz
-!    allocate(z_bin(n_z_bin))
- 
+     open(unit = 101,file = '/Users/ngoc/Desktop/project/GCs/code/GCs-in-tree(Benson2017).txt',status='replace') 
+!     open(unit = 101,file = '/Users/ngoc/Desktop/project/GCs/code/GCs-in-tree.txt',status='replace')        
+     z = 0. 
      This_Node => MergerTree(1)
      do while (associated(This_Node))
         if (This_Node%mhalo .lt. M_form_GC) then 
             z = 1.0/alev(This_node%parent%jlevel)-1.0                
             if (z .ge. z_form_GC) then
                 count_GC = count_GC + 1            
-!                print *, 'GC formed at z= ', z 
+                ! write redshift of halos into file
+                write(101,*) z
+                !This_Node => Walk_To_Uncle(This_Node)
                 This_Node => Walk_To_Next_Branch(This_Node)
             endif
         endif
@@ -191,8 +194,8 @@ do i = 1,ntree
         endif
      end do
 
+     close(101)     
      print *, 'total number of primordial GCs in tree',i ,'is', count_GC
-!     print *, 'number of primordial GCs in each redshift bin of tree',i ,'is', count_GC_array
 
 
 
